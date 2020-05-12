@@ -6,32 +6,32 @@ resources:
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/z-quantum-core.git"
-    branch: "master"
+    branch: "stable"
 - name: z-quantum-qcbm
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/z-quantum-qcbm.git"
-    branch: "172246562-bitstring-dist-history"
+    branch: "stable"
 - name: z-quantum-optimizers
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/z-quantum-optimizers.git"
-    branch: "master"
+    branch: "stable"
 - name: qe-forest
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/qe-forest.git"
-    branch: "master"
+    branch: "stable"
 - name: qe-qhipster
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/qe-qhipster.git"
-    branch: "master"
+    branch: "stable"
 - name: qe-openfermion
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/qe-openfermion.git"
-    branch: "master"
+    branch: "stable"
 
 # Specify the prefix to use when generating names of workflow executions.
 metadata:
@@ -45,7 +45,7 @@ spec:
     parameters:
     - s3-bucket: quantum-engine
     - s3-key: projects/z-quantum-qcbm/qcbm-opt
-    - docker-image: 'open_pack_default'
+    - docker-image: 'z-quantum-default'
 
   templates:
 
