@@ -166,7 +166,7 @@ spec:
             from zquantum.core.utils import save_list
             
             measurements = Measurements.load_from_file('measurements.json')
-            measured_distribution = measurements.get_distribution().distribution_dict
+            measured_distribution = measurements.get_distribution()
             target_distribution = load_bitstring_distribution("target-distribution.json")
             negative_clipped_log_likelihood = []
             negative_clipped_log_likelihood.append(compute_clipped_negative_log_likelihood(target_distribution, measured_distribution))
