@@ -133,7 +133,7 @@ spec:
 
             n_qubits = {{inputs.parameters.n-qubits}}
             n_layers = {{inputs.parameters.n-layers}}
-            topology = {{inputs.parameters.topology}}
+            topology = "{{inputs.parameters.topology}}"
             iteration = {{inputs.parameters.iteration}}
             print(n_qubits)
 
