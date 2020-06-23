@@ -56,7 +56,7 @@ spec:
           parameters:
           - n-qubits: "4"
           - n-layers: "4"
-          - seed: "1234"
+          - seed: "14"
           - topology: "all"
           - min-val: "-1.57"
           - max-val: "1.57"

@@ -109,4 +109,46 @@ spec:
         path: /app/optimization-results.json
       - name: optimized-parameters
         path: /app/optimized-parameters.json
+
+  - name: build-qcbm-from-optimization-params-in-optimization-history
+    parent: generic-task
+    inputs:
+      parameters:
+      - name: n-qubits
+      - name: n-layers
+      - name: topology
+        default: "all"
+      - name: iteration
+      - name: command
+        value: bash main_script.sh
+      artifacts:
+      - name: optimization-results
+        path: /app/optimization-results.json
+      - name: python-script
+        path: /app/python_script.py
+        raw:
+          data: |
+            from zquantum.optimizers.utils import load_optimization_results
+            from zquantum.qcbm.ansatz import build_qcbm_circuit_ion_trap
+            from zquantum.core.circuit import save_circuit
+
+            n_qubits = {{inputs.parameters.n-qubits}}
+            n_layers = {{inputs.parameters.n-layers}}
+            topology = {{inputs.parameters.topology}}
+            iteration = {{inputs.parameters.iteration}}
+
+            results = load_optimization_results("optimization-results.json")
+            params = optimization_result['history'][iteration]['params']
+            
+            circuit = build_qcbm_circuit_ion_trap(params, n_qubits, n_layers, topology=topology)
+            save_circuit(circuit, 'circuit.json')
+
+    outputs:
+      artifacts:
+      - name: circuit
+        path: /app/circuit.json
+            
+
+
+
       
