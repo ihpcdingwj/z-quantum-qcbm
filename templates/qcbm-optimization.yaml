@@ -119,12 +119,12 @@ spec:
         default: "all"
       - name: iteration
       - name: command
-        value: bash main_script.sh
+        value: python3 main_script.py
       artifacts:
       - name: optimization-results
         path: /app/optimization-results.json
-      - name: python-script
-        path: /app/python_script.py
+      - name: main-script
+        path: /app/main_script.py
         raw:
           data: |
             from zquantum.optimizers.utils import load_optimization_results
@@ -142,7 +142,6 @@ spec:
             
             circuit = build_qcbm_circuit_ion_trap(params, n_qubits, n_layers, topology=topology)
             save_circuit(circuit, 'circuit.json')
-
     outputs:
       artifacts:
       - name: circuit
