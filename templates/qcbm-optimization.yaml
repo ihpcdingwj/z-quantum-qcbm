@@ -138,7 +138,7 @@ spec:
             print(n_qubits)
 
             results = load_optimization_results("optimization-results.json")
-            params = optimization_result['history'][iteration]['params']
+            params = result['history'][iteration]['params']
             
             circuit = build_qcbm_circuit_ion_trap(params, n_qubits, n_layers, topology=topology)
             save_circuit(circuit, 'circuit.json')
