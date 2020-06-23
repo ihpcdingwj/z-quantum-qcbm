@@ -42,7 +42,6 @@ spec:
       - name: parameters
         path: /app/parameters.json
       
-
   - name: optimize-variational-qcbm-circuit
     parent: generic-task
     inputs:
@@ -136,6 +135,7 @@ spec:
             n_layers = {{inputs.parameters.n-layers}}
             topology = {{inputs.parameters.topology}}
             iteration = {{inputs.parameters.iteration}}
+            print(n_qubits)
 
             results = load_optimization_results("optimization-results.json")
             params = optimization_result['history'][iteration]['params']
