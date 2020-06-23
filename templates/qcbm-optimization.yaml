@@ -135,8 +135,7 @@ spec:
             n_layers = {{inputs.parameters.n-layers}}
             topology = "{{inputs.parameters.topology}}"
             iteration = {{inputs.parameters.iteration}}
-            print(n_qubits)
-
+       
             results = load_optimization_results("optimization-results.json")
             params = results['history'][iteration]['params']
             
@@ -146,6 +145,41 @@ spec:
       artifacts:
       - name: circuit
         path: /app/circuit.json
+
+  - name: compute-negative-log-likelihood
+    parent: generic-task
+    inputs:
+      parameters:
+      - name: command
+        value: python3 main_script.py
+      artifacts:
+      - name: measurements
+        path: /app/measurements.json
+      - name: target-distribution
+        path: /app/target-distribution.json
+      - name: main-script
+        path: /app/main_script.py
+        raw:
+          data: |
+            from zquantum.core.bitstring_distribution import compute_clipped_negative_log_likelihood, load_bitstring_distribution
+            from zquantum.core.measurement import Measurements
+            from zquantum.core.utils import save_list
+            
+            epsilon = {{inputs.parameters.epsilon}}
+            measurements = Measurements.load_from_file('measurements.json')
+            measured_distribution = measurements.get_distribution().distribution_dict
+            target_distribution = load_bitstring_distribution("target-distribution.json")
+            negative_clipped_log_likelihood = []
+            negative_clipped_log_likelihood.append(compute_clipped_negative_log_likelihood(target_distribution, measured_distribution))
+            save_list(negative_clipped_log_likelihood, 'negative-clipped-log-likelihood.json')
+
+    outputs:
+      artifacts:
+        name: negative-clipped-log-likelihood
+        path: /app/negative-clipped-log-likelihood.json
+        
+
+
             
 
 
