@@ -175,7 +175,7 @@ spec:
 
     outputs:
       artifacts:
-        name: negative-clipped-log-likelihood
+      - name: negative-clipped-log-likelihood
         path: /app/negative-clipped-log-likelihood.json
         
 
