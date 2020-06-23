@@ -165,7 +165,6 @@ spec:
             from zquantum.core.measurement import Measurements
             from zquantum.core.utils import save_list
             
-            epsilon = {{inputs.parameters.epsilon}}
             measurements = Measurements.load_from_file('measurements.json')
             measured_distribution = measurements.get_distribution().distribution_dict
             target_distribution = load_bitstring_distribution("target-distribution.json")
