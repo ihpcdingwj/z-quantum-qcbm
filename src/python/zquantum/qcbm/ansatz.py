@@ -272,7 +272,7 @@ def generate_random_initial_params(n_qubits, n_layers=2, topology='all', min_val
 
     ansatz = QCBMAnsatz(n_layers, n_qubits, topology)
 
-    num_parameters_by_layer = ansatz.get_number_of_parameters_by_layer()
+    num_parameters_by_layer = np.sum(ansatz.get_number_of_parameters_by_layer())
 
     params = []
     for num_parameters in num_parameters_by_layer:
