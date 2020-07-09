@@ -266,14 +266,5 @@ def generate_random_initial_params(n_qubits, n_layers=2, topology='all', min_val
         numpy.array: the generated parameters, stored in a 1D array.
     """
     gen = np.random.RandomState(seed)
-    if n_layers == 1:
-        # If only one layer, then only need parameters for a single layer of Rx gates
-        return gen.uniform(min_val, max_val, n_qubits)
-
-    ansatz = QCBMAnsatz(n_layers, n_qubits, topology)
-
-    num_params = ansatz.number_of_params()
-
-    params = gen.uniform(min_val, max_val, num_parameters)
-    
+    params = gen.uniform(min_val, max_val, QCBMAnsatz(n_layers, n_qubits, topology).number_of_params())
     return params
