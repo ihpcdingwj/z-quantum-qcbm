@@ -253,7 +253,10 @@ class QCBMAnsatz(Ansatz):
             [sympy.Symbol("theta_{}".format(i)) for i in range(self.number_of_params)]
         )
 
-def generate_random_initial_params(n_qubits, n_layers=2, topology='all', min_val=0., max_val=1., seed=None):
+
+def generate_random_initial_params(
+    n_qubits, n_layers=2, topology="all", min_val=0.0, max_val=1.0, seed=None
+):
     """Generate random parameters for the QCBM circuit (iontrap ansatz).
     Args:
         n_qubits (int): number of qubits in the circuit.
@@ -266,5 +269,10 @@ def generate_random_initial_params(n_qubits, n_layers=2, topology='all', min_val
         numpy.array: the generated parameters, stored in a 1D array.
     """
     gen = np.random.RandomState(seed)
-    params = gen.uniform(min_val, max_val, QCBMAnsatz(n_layers, n_qubits, topology).number_of_params())
+    qcbm_ansatz_circuit = QCBMAnsatz(n_layers, n_qubits, topology)
+    number_of_parameters_by_layers_2 = (
+        qcbm_ansatz_circuit.get_number_of_parameters_by_layer()
+    )
+    sum_params = np.sum(number_of_parameters_by_layers_2)
+    params = gen.uniform(min_val, max_val, sum_params)
     return params
