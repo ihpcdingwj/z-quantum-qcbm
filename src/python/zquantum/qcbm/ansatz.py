@@ -205,7 +205,7 @@ class QCBMAnsatz(Ansatz):
         """Determine the number of parameters needed for each layer in the ansatz
 
         Returns:
-            A 1D array of integers 
+            A 1D array of integers
         """
         if self.number_of_layers == 1:
             # If only one layer, then only need parameters for a single layer of Rx gates
@@ -253,3 +253,26 @@ class QCBMAnsatz(Ansatz):
             [sympy.Symbol("theta_{}".format(i)) for i in range(self.number_of_params)]
         )
 
+def generate_random_initial_params(n_qubits, n_layers=2, topology='all', min_val=0., max_val=1., seed=None):
+    """Generate random parameters for the QCBM circuit (iontrap ansatz).
+    Args:
+        n_qubits (int): number of qubits in the circuit.
+        n_layers (int): number of entangling layers in the circuit. If n_layers=-1, you can specify a custom number of parameters (see below).
+        topology (str): describes topology of qubits connectivity.
+        min_val (float): minimum parameter value.
+        max_val (float): maximum parameter value.
+        seed (int): initialize random generator
+    Returns:
+        numpy.array: the generated parameters, stored in a 1D array.
+    """
+    gen = np.random.RandomState(seed)
+    if n_layers == 1:
+        # If only one layer, then only need parameters for a single layer of Rx gates
+        return gen.uniform(min_val, max_val, n_qubits)
+
+    num_parameters_by_layer = get_number_of_parameters_by_layer(n_qubits, n_layers, topology)
+
+    params = []
+    for num_parameters in num_parameters_by_layer:
+        params = np.concatenate([params, gen.uniform(min_val, max_val, num_parameters)])
+    return params
