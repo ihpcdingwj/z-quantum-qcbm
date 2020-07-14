@@ -1,0 +1,120 @@
+# This workflow gets parameters from an epoch of a training that has already occured creates 
+# a qcbm circuit from it and runs it on a noisy qpu
+
+ZapOSApiVersion: v1alpha1
+kind: Workflow
+
+resources:
+- name: z-quantum-core
+  type: git
+  parameters:
+    url: "git@github.com:zapatacomputing/z-quantum-core.git"
+    branch: "dev"
+- name: z-quantum-qcbm
+  type: git
+  parameters:
+    url: "git@github.com:zapatacomputing/z-quantum-qcbm.git"
+    branch: "honeywel-experiment"
+- name: z-quantum-optimizers
+  type: git
+  parameters:
+    url: "git@github.com:zapatacomputing/z-quantum-optimizers.git"
+    branch: "dev"
+- name: qe-forest
+  type: git
+  parameters:
+    url: "git@github.com:zapatacomputing/qe-forest.git"
+    branch: "dev"
+- name: qe-qhipster
+  type: git
+  parameters:
+    url: "git@github.com:zapatacomputing/qe-qhipster.git"
+    branch: "dev"
+- name: qe-openfermion
+  type: git
+  parameters:
+    url: "git@github.com:zapatacomputing/qe-openfermion.git"
+    branch: "dev"
+- name: qe-honeywell
+  type: git
+  parameters:
+    url: "git@github.com:zapatacomputing/qe-honeywell.git"
+    branch: "master"
+
+# Specify the prefix to use when generating names of workflow executions.
+metadata:
+  generateName: qcbm-opt-
+
+# The actual workflow specification
+spec:
+
+  entrypoint: main
+  arguments:
+    parameters:
+    - s3-bucket: quantum-engine
+    - s3-key: projects/z-quantum-qcbm/qcbm-opt
+    - docker-image: 'z-quantum-default'
+
+  templates:
+
+    - name: main
+      steps:
+      - - name: build-qcbm-from-optimization-params-in-optimization-history
+          template: build-qcbm-from-optimization-params-in-optimization-history
+          arguments:
+            parameters:
+            - n-qubits: "6"
+            - n-layers: "4"
+            - iteration: "50"
+            - topology: "all"
+            - resources: [z-quantum-core, z-quantum-qcbm, z-quantum-optimizers]
+            - docker-image: "{{workflow.parameters.docker-image}}"
+            artifacts:
+            - optimization-results:
+                s3:
+                  insecure: true
+                  accessKeySecret:
+                      name: minio-storage-cluster-instance-secret
+                      key: accesskey
+                  secretKeySecret:
+                      name: minio-storage-cluster-instance-secret
+                      key: secretkey
+                  endpoint: a68593f3034b711ea93a90299da8c8c1-1541162731.us-east-1.elb.amazonaws.com:9000
+                  bucket: quantum-engine-complete
+                  # key: 'projects/z-quantum-qcbm/qcbm-opt/qcbm-opt-b6dc9/qcbm-opt-b6dc9-1215656835/optimization-results.tgz' # 4 layers
+                  # key: 'projects/z-quantum-qcbm/qcbm-opt/qcbm-opt-mp6f6/qcbm-opt-mp6f6-1985396095/optimization-results.tgz' # 2 layers
+                  key: 'projects/z-quantum-qcbm/qcbm-opt/qcbm-opt-4hvcx/qcbm-opt-4hvcx-2654413259/optimization-results.tgz' # 1 layer
+
+      - - name: run-circuit-and-measure
+          template: run-circuit-and-measure
+          arguments:
+            parameters:
+            # - backend-specs: "{'module_name': 'qeforest.simulator', 'function_name': 'ForestSimulator', 'device_name': 'wavefunction-simulator'}"
+            - backend-specs: "{'module_name': 'qehoneywell.backend', 'function_name': 'HoneywellBackend', 'device_name': 'HQS-LT-1.0-APIVAL', 'token': 'ANrxPHBNLF9F2D9J8kenA771qvSD29vJ9qBbKzNg', 'pwd': 'Zapatahoneywell1', 'user_name': 'bperopadre@zapatacomputing.com', 'n_samples': 100}"
+            - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-forest, qe-honeywell]
+            - docker-image: "{{workflow.parameters.docker-image}}"
+            artifacts:
+            - circuit:
+                from: '{{steps.build-qcbm-from-optimization-params-in-optimization-history.outputs.artifacts.circuit}}'
+
+      - - name: get-bars-and-stripes-distribution
+          template: generate-bars-and-stripes-target-distribution
+          arguments:
+            parameters:
+            - nrows: "3"
+            - ncols: "2"
+            - fraction: "1.0"
+            - method: "zigzag"
+            - resources: [z-quantum-core, z-quantum-qcbm]
+
+      - - name: compute-negative-log-likelihood
+          template: compute-negative-log-likelihood
+          arguments:
+            parameters:
+            - resources: [z-quantum-core, z-quantum-qcbm]
+            - docker-image: "{{workflow.parameters.docker-image}}"
+            artifacts:
+            - measurements:
+                from: '{{steps.run-circuit-and-measure.outputs.artifacts.measurements}}'
+            - target-distribution:
+                from: '{{steps.get-bars-and-stripes-distribution.outputs.artifacts.distribution}}'
