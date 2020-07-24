@@ -162,7 +162,7 @@ spec:
         raw:
           data: |
             from zquantum.core.bitstring_distribution.distance_measures import compute_clipped_negative_log_likelihood
-            from zquantum.core.bitstring_distribution load_bitstring_distribution
+            from zquantum.core.bitstring_distribution import load_bitstring_distribution
             from zquantum.core.measurement import Measurements
             from zquantum.core.utils import save_list
             
