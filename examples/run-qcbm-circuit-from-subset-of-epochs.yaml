@@ -54,6 +54,8 @@ spec:
     - s3-bucket: quantum-engine
     - s3-key: projects/z-quantum-qcbm/qcbm-opt
     - docker-image: 'z-quantum-default'
+    - number-of-qubits: "6"
+    - number-of-layers: "2"
 
   templates:
 
@@ -79,8 +81,8 @@ spec:
           template: build-qcbm-from-optimization-params-in-optimization-history
           arguments:
             parameters:
-            - n-qubits: "6"
-            - n-layers: "4"
+            - n-qubits: "{{workflow.parameters.number-of-qubits}}"
+            - n-layers: "{{workflow.parameters.number-of-layers}}"
             - iteration: "{{inputs.parameters.epoch}}"
             - topology: "all"
             - resources: [z-quantum-core, z-quantum-qcbm, z-quantum-optimizers]
@@ -97,8 +99,8 @@ spec:
                       key: secretkey
                   endpoint: a68593f3034b711ea93a90299da8c8c1-1541162731.us-east-1.elb.amazonaws.com:9000
                   bucket: quantum-engine-complete
-                  key: 'projects/z-quantum-qcbm/qcbm-opt/qcbm-opt-b6dc9/qcbm-opt-b6dc9-1215656835/optimization-results.tgz'  # 4 layers
-                  # key: 'projects/z-quantum-qcbm/qcbm-opt/qcbm-opt-mp6f6/qcbm-opt-mp6f6-1985396095/optimization-results.tgz' # 2 layers
+                  # key: 'projects/z-quantum-qcbm/qcbm-opt/qcbm-opt-b6dc9/qcbm-opt-b6dc9-1215656835/optimization-results.tgz'  # 4 layers
+                  key: 'projects/z-quantum-qcbm/qcbm-opt/qcbm-opt-mp6f6/qcbm-opt-mp6f6-1985396095/optimization-results.tgz' # 2 layers
                   # key: 'projects/z-quantum-qcbm/qcbm-opt/qcbm-opt-4hvcx/qcbm-opt-4hvcx-2654413259/optimization-results.tgz' # 1 layer
 
       - - name: run-circuit-and-measure
