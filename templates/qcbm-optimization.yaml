@@ -79,6 +79,7 @@ spec:
         raw:
           data: |
             from zquantum.optimizers.utils import load_optimization_results
+            from zquantum.core.circuit import save_circuit_template_params
 
             opt_results=load_optimization_results("optimization-results.json")
 
