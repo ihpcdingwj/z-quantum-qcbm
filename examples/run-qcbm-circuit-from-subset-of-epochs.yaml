@@ -67,8 +67,7 @@ spec:
           arguments:
             parameters: 
             - epoch: "{{item}}"
-          withItems: [1, 50, 500, 1000, 1500]  # 4, 2 layers
-          # withItems: [1, 20, 50, 100] # 1 layer.
+          withItems: [1, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600]  # 4, 2 layers
 
 
     - name: loop-over-subset-of-epochs
@@ -87,6 +86,7 @@ spec:
             - topology: "all"
             - resources: [z-quantum-core, z-quantum-qcbm, z-quantum-optimizers]
             - docker-image: "{{workflow.parameters.docker-image}}"
+
             artifacts:
             - optimization-results:
                 s3:
@@ -102,13 +102,14 @@ spec:
                   # key: 'projects/z-quantum-qcbm/qcbm-opt/qcbm-opt-b6dc9/qcbm-opt-b6dc9-1215656835/optimization-results.tgz'  # 4 layers
                   key: 'projects/z-quantum-qcbm/qcbm-opt/qcbm-opt-mp6f6/qcbm-opt-mp6f6-1985396095/optimization-results.tgz' # 2 layers
                   # key: 'projects/z-quantum-qcbm/qcbm-opt/qcbm-opt-4hvcx/qcbm-opt-4hvcx-2654413259/optimization-results.tgz' # 1 layer
+          
 
       - - name: run-circuit-and-measure
           template: run-circuit-and-measure
           arguments:
             parameters:
             # - backend-specs: "{'module_name': 'qeforest.simulator', 'function_name': 'ForestSimulator', 'device_name': 'wavefunction-simulator'}"
-            - backend-specs: "{'module_name': 'qehoneywell.backend', 'function_name': 'HoneywellBackend', 'device_name': 'HQS-LT-1.0', 'token': 'ANrxPHBNLF9F2D9J8kenA771qvSD29vJ9qBbKzNg', 'pwd': 'Zapatahoneywell1', 'user_name': 'bperopadre@zapatacomputing.com', 'n_samples': 1000}"
+            - backend-specs: "{'module_name': 'qehoneywell.backend', 'function_name': 'HoneywellBackend', 'device_name': 'HQS-LT-1.0-APIVAL', 'token': 'ANrxPHBNLF9F2D9J8kenA771qvSD29vJ9qBbKzNg', 'pwd': 'Zapatahoneywell1', 'user_name': 'bperopadre@zapatacomputing.com', 'n_samples': 500}"
             - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-forest, qe-honeywell]
             - docker-image: "{{workflow.parameters.docker-image}}"
             artifacts:

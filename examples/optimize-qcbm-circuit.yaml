@@ -2,43 +2,47 @@ ZapOSApiVersion: v1alpha1
 kind: Workflow
 
 resources:
-- name: z-quantum-core
-  type: git
-  parameters:
-    url: "git@github.com:zapatacomputing/z-quantum-core.git"
-    branch: "dev"
-- name: z-quantum-qcbm
-  type: git
-  parameters:
-    url: "git@github.com:zapatacomputing/z-quantum-qcbm.git"
-    branch: "dev"
-- name: z-quantum-optimizers
-  type: git
-  parameters:
-    url: "git@github.com:zapatacomputing/z-quantum-optimizers.git"
-    branch: "dev"
-- name: qe-forest
-  type: git
-  parameters:
-    url: "git@github.com:zapatacomputing/qe-forest.git"
-    branch: "dev"
-- name: qe-qhipster
-  type: git
-  parameters:
-    url: "git@github.com:zapatacomputing/qe-qhipster.git"
-    branch: "dev"
-- name: qe-honeywell
-  type: git
-  parameters:
-    url: "git@github.com:zapatacomputing/qe-honeywell.git"
-    branch: "master"
+  - name: z-quantum-core
+    type: git
+    parameters:
+      url: "git@github.com:zapatacomputing/z-quantum-core.git"
+      branch: "symmetrized-loglikelihood"
+  - name: z-quantum-qcbm
+    type: git
+    parameters:
+      url: "git@github.com:zapatacomputing/z-quantum-qcbm.git"
+      branch: "dev"
+  - name: z-quantum-optimizers
+    type: git
+    parameters:
+      url: "git@github.com:zapatacomputing/z-quantum-optimizers.git"
+      branch: "dev"
+  - name: qe-forest
+    type: git
+    parameters:
+      url: "git@github.com:zapatacomputing/qe-forest.git"
+      branch: "dev"
+  - name: qe-qhipster
+    type: git
+    parameters:
+      url: "git@github.com:zapatacomputing/qe-qhipster.git"
+      branch: "dev"
+  - name: qe-qiskit
+    type: git
+    parameters:
+      url: "git@github.com:zapatacomputing/qe-qiskit.git"
+      branch: "dev"
+  - name: qe-honeywell
+    type: git
+    parameters:
+      url: "git@github.com:zapatacomputing/qe-honeywell.git"
+      branch: "master"
 
-- name: qe-openfermion
-  type: git
-  parameters:
-    url: "git@github.com:zapatacomputing/qe-openfermion.git"
-    branch: "dev"
-
+  - name: qe-openfermion
+    type: git
+    parameters:
+      url: "git@github.com:zapatacomputing/qe-openfermion.git"
+      branch: "dev"
 
 # Specify the prefix to use when generating names of workflow executions.
 metadata:
@@ -46,56 +50,64 @@ metadata:
 
 # The actual workflow specification
 spec:
-
   entrypoint: main
   arguments:
     parameters:
-    - s3-bucket: quantum-engine
-    - s3-key: projects/z-quantum-qcbm/qcbm-opt
- 
+      - s3-bucket: quantum-engine
+      - s3-key: projects/z-quantum-qcbm/qcbm-opt
+
   templates:
+    - name: main
+      steps:
+        - - name: get-initial-parameters
+            template: generate-random-qcbm-params
+            arguments:
+              parameters:
+                - n-qubits: "6"
+                - n-layers: "4"
+                - seed: "14"
+                - topology: "all"
+                - min-val: "-1.57"
+                - max-val: "1.57"
+                - resources: [z-quantum-core, z-quantum-qcbm]
 
-  - name: main
-    steps:
-    - - name: get-initial-parameters
-        template: generate-random-qcbm-params
-        arguments:
-          parameters:
-          - n-qubits: "6"
-          - n-layers: "4"
-          - seed: "14"
-          - topology: "all"
-          - min-val: "-1.57"
-          - max-val: "1.57"
-          - resources: [z-quantum-core, z-quantum-qcbm]
+        - - name: get-bars-and-stripes-distribution
+            template: generate-bars-and-stripes-target-distribution
+            arguments:
+              parameters:
+                - nrows: "3"
+                - ncols: "2"
+                - fraction: "1.0"
+                - method: "zigzag"
+                - resources: [z-quantum-core, z-quantum-qcbm]
 
-    - - name: get-bars-and-stripes-distribution
-        template: generate-bars-and-stripes-target-distribution
-        arguments:
-          parameters:
-          - nrows: "3"
-          - ncols: "2"
-          - fraction: "1.0"
-          - method: "zigzag"
-          - resources: [z-quantum-core, z-quantum-qcbm]
-
-    - - name: optimize-circuit
-        template: optimize-variational-qcbm-circuit
-        arguments:
-          parameters:
-          - n-qubits: "6"
-          - n-layers: "4"
-          - topology: "all"
-          - epsilon: "0.000001"
-          - distance-measure-specs: "{'module_name': 'zquantum.core.bitstring_distribution', 'function_name': 'compute_clipped_negative_log_likelihood'}"
-          # - backend-specs: "{'module_name': 'qeforest.simulator', 'function_name': 'ForestSimulator', 'device_name': 'wavefunction-simulator'}"
-          - backend-specs: "{'module_name': 'qehoneywell.backend', 'function_name': 'HoneywellBackend', 'device_name': 'HQS-LT-1.0-APIVAL', 'token': 'ANrxPHBNLF9F2D9J8kenA771qvSD29vJ9qBbKzNg', 'pwd': 'Zapatahoneywell1', 'user_name': 'bperopadre@zapatacomputing.com'}"
-          - optimizer-specs: "{'module_name': 'zquantum.optimizers.cma_es_optimizer', 'function_name': 'CMAESOptimizer', 'options': {'popsize': 5, 'sigma_0': 0.1, 'tolx': 1e-6}}"
-          # - optimizer-specs: "{'module_name': 'zquantum.optimizers.scipy_optimizer', 'function_name': 'ScipyOptimizer', 'method': 'L-BFGS-B'}"
-          - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-forest, z-quantum-qcbm, qe-honeywell]
-          - memory: 8000Mi
-          artifacts:
-          - initial-parameters:
-              from: "{{steps.get-initial-parameters.outputs.artifacts.parameters}}"
-          - target-distribution:
-              from: "{{steps.get-bars-and-stripes-distribution.outputs.artifacts.distribution}}"
+        - - name: optimize-circuit
+            template: optimize-variational-qcbm-circuit
+            arguments:
+              parameters:
+                - n-qubits: "6"
+                - n-layers: "4"
+                - topology: "all"
+                - epsilon: "0.000001"
+                - distance-measure-specs: "{'module_name': 'zquantum.core.bitstring_distribution.distance_measures.jensen_shannon_divergence', 'function_name': 'compute_jensen_shannon_divergence'}"
+                # - backend-specs: "{'module_name': 'qeforest.simulator', 'function_name': 'ForestSimulator', 'device_name': 'wavefunction-simulator'}"
+                - backend-specs: "{'module_name': 'qeqiskit.simulator', 'function_name': 'QiskitSimulator', device_name': 'statevector_simulator'}"
+                # - backend-specs: "{'module_name': 'qehoneywell.backend', 'function_name': 'HoneywellBackend', 'device_name': 'HQS-LT-1.0-APIVAL', 'token': 'ANrxPHBNLF9F2D9J8kenA771qvSD29vJ9qBbKzNg', 'pwd': 'Zapatahoneywell1', 'user_name': 'bperopadre@zapatacomputing.com'}"
+                - optimizer-specs: "{'module_name': 'zquantum.optimizers.cma_es_optimizer', 'function_name': 'CMAESOptimizer', 'options': {'popsize': 5, 'sigma_0': 0.1, 'tolx': 1e-6}}"
+                # - optimizer-specs: "{'module_name': 'zquantum.optimizers.scipy_optimizer', 'function_name': 'ScipyOptimizer', 'method': 'L-BFGS-B'}"
+                - resources:
+                    [
+                      z-quantum-core,
+                      qe-openfermion,
+                      z-quantum-optimizers,
+                      qe-forest,
+                      z-quantum-qcbm,
+                      qe-honeywell,
+                      qe-qiskit,
+                    ]
+                - memory: 8000Mi
+              artifacts:
+                - initial-parameters:
+                    from: "{{steps.get-initial-parameters.outputs.artifacts.parameters}}"
+                - target-distribution:
+                    from: "{{steps.get-bars-and-stripes-distribution.outputs.artifacts.distribution}}"
