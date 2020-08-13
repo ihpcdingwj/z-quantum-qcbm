@@ -1,188 +1,135 @@
 spec:
   templates:
+    - name: optimize-variational-qcbm-circuit
+      parent: generic-task
+      inputs:
+        parameters:
+          - name: n-qubits
+          - name: n-layers
+          - name: topology
+            default: "all"
+          - name: distance-measure-specs
+          - name: distance-measure-parameters
+          - name: backend-specs
+          - name: optimizer-specs
+          - name: command
+            value: bash main_script.sh
+        artifacts:
+          - name: initial-parameters
+            path: /app/initial-parameters.json
+          - name: target-distribution
+            path: /app/target-distribution.json
+          - name: main-script
+            path: /app/main_script.sh
+            raw:
+              data: |
+                qvm -S &
+                quilc -S &
+                source /app/usr/local/bin/compilers_and_libraries.sh
+                python3 python_script.py
+          - name: python-script
+            path: /app/python_script.py
+            raw:
+              data: |
+                from zquantum.qcbm.cost_function import QCBMCostFunction
+                from zquantum.qcbm.ansatz import QCBMAnsatz
+                from zquantum.core.circuit import load_circuit_template_params, save_circuit_template_params
+                from zquantum.core.utils import create_object, get_func_from_specs
+                from zquantum.optimizers.utils import save_optimization_results
+                from zquantum.core.bitstring_distribution import load_bitstring_distribution
 
-  - name: generate-random-qcbm-params
-    parent: generic-task
-    inputs:
-      parameters:
-      - name: n-qubits
-      - name: n-layers
-        default: "2"
-      - name: topology
-        default: "all"
-      - name: min-val
-        default: "0."
-      - name: max-val
-        default: "1."
-      - name: seed
-        default: "None"
-      - name: command
-        value: python3 main_script.py
-      artifacts:
-      - name: main-script
-        path: /app/main_script.py
-        raw:
-          data: |
-            from zquantum.qcbm.ansatz import generate_random_initial_params
-            from zquantum.core.circuit import save_circuit_template_params
+                distance_measure = get_func_from_specs({{inputs.parameters.distance-measure-specs}})
+                distance_measure_parameters = {{inputs.parameters.distance-measure-parameters}}
 
-            n_qubits = {{inputs.parameters.n-qubits}}
-            n_layers = {{inputs.parameters.n-layers}}
-            topology = "{{inputs.parameters.topology}}"
-            min_val = {{inputs.parameters.min-val}}
-            max_val = {{inputs.parameters.max-val}}
-            seed = {{inputs.parameters.seed}}
+                ansatz = QCBMAnsatz({{inputs.parameters.n-layers}}, {{inputs.parameters.n-qubits}}, "{{inputs.parameters.topology}}")
 
-            parameters = generate_random_initial_params(n_qubits, n_layers=n_layers, 
-                  topology=topology, min_val=min_val, max_val=max_val, seed=seed)
+                backend_specs = {{inputs.parameters.backend-specs}}
+                backend = create_object(backend_specs)
 
-            save_circuit_template_params(parameters, "parameters.json")
-    outputs:
-      artifacts:
-      - name: parameters
-        path: /app/parameters.json
-      
-  - name: optimize-variational-qcbm-circuit
-    parent: generic-task
-    inputs:
-      parameters:
-      - name: n-qubits
-      - name: n-layers
-      - name: topology
-        default: "all"
-      - name: epsilon
-      - name: distance-measure-specs
-      - name: backend-specs
-      - name: optimizer-specs
-      - name: command
-        value: bash main_script.sh
-      artifacts:
-      - name: initial-parameters
-        path: /app/initial-parameters.json
-      - name: target-distribution
-        path: /app/target-distribution.json
-      - name: main-script
-        path: /app/main_script.sh
-        raw:
-          data: |
-            qvm -S &
-            quilc -S &
-            source /app/usr/local/bin/compilers_and_libraries.sh
-            python3 python_script.py
-      - name: python-script
-        path: /app/python_script.py
-        raw:
-          data: |
-            from zquantum.qcbm.cost_function import QCBMCostFunction
-            from zquantum.qcbm.ansatz import get_qcbm_ansatz
-            from zquantum.core.circuit import load_circuit_template_params, save_circuit_template_params
-            from zquantum.core.utils import create_object, get_func_from_specs
-            from zquantum.optimizers.utils import save_optimization_results
-            from zquantum.core.bitstring_distribution import load_bitstring_distribution
+                optimizer_specs = {{inputs.parameters.optimizer-specs}}
+                optimizer = create_object(optimizer_specs)
 
-            n_qubits = {{inputs.parameters.n-qubits}}
-            n_layers = {{inputs.parameters.n-layers}}
-            topology = "{{inputs.parameters.topology}}"
-            epsilon = {{inputs.parameters.epsilon}}
-            distance_measure = get_func_from_specs({{inputs.parameters.distance-measure-specs}})
+                initial_params = load_circuit_template_params("initial-parameters.json")
+                target_distribution = load_bitstring_distribution("target-distribution.json")
 
-            ansatz = get_qcbm_ansatz(n_qubits, n_layers, topology)
+                cost_function = QCBMCostFunction(ansatz, backend, distance_measure, distance_measure_parameters, target_distribution)
+                opt_results = optimizer.minimize(cost_function, initial_params)
 
-            backend_specs = {{inputs.parameters.backend-specs}}
-            backend = create_object(backend_specs)
+                save_optimization_results(opt_results, "optimization-results.json")
+                save_circuit_template_params(opt_results.opt_params, "optimized-parameters.json")
+      outputs:
+        artifacts:
+          - name: optimization-results
+            path: /app/optimization-results.json
+          - name: optimized-parameters
+            path: /app/optimized-parameters.json
 
-            optimizer_specs = {{inputs.parameters.optimizer-specs}}
-            optimizer = create_object(optimizer_specs)
+    - name: build-qcbm-from-optimization-params-in-optimization-history
+      parent: generic-task
+      inputs:
+        parameters:
+          - name: n-qubits
+          - name: n-layers
+          - name: topology
+            default: "all"
+          - name: iteration
+          - name: command
+            value: python3 main_script.py
+        artifacts:
+          - name: optimization-results
+            path: /app/optimization-results.json
+          - name: main-script
+            path: /app/main_script.py
+            raw:
+              data: |
+                from zquantum.optimizers.utils import load_optimization_results
+                from zquantum.qcbm.ansatz import build_qcbm_circuit_ion_trap
+                from zquantum.core.circuit import save_circuit
 
-            initial_params = load_circuit_template_params("initial-parameters.json")
-            target_distribution = load_bitstring_distribution("target-distribution.json")
-            
-            cost_function = QCBMCostFunction(ansatz, backend, distance_measure, target_distribution, epsilon)
-            opt_results = optimizer.minimize(cost_function, initial_params)
+                n_qubits = {{inputs.parameters.n-qubits}}
+                n_layers = {{inputs.parameters.n-layers}}
+                topology = "{{inputs.parameters.topology}}"
+                iteration = {{inputs.parameters.iteration}}
 
-            save_optimization_results(opt_results, "optimization-results.json")
-            save_circuit_template_params(opt_results.opt_params, "optimized-parameters.json")
-    outputs:
-      artifacts:
-      - name: optimization-results
-        path: /app/optimization-results.json
-      - name: optimized-parameters
-        path: /app/optimized-parameters.json
+                results = load_optimization_results("optimization-results.json")
+                params = results['history'][iteration]['params']
 
-  - name: build-qcbm-from-optimization-params-in-optimization-history
-    parent: generic-task
-    inputs:
-      parameters:
-      - name: n-qubits
-      - name: n-layers
-      - name: topology
-        default: "all"
-      - name: iteration
-      - name: command
-        value: python3 main_script.py
-      artifacts:
-      - name: optimization-results
-        path: /app/optimization-results.json
-      - name: main-script
-        path: /app/main_script.py
-        raw:
-          data: |
-            from zquantum.optimizers.utils import load_optimization_results
-            from zquantum.qcbm.ansatz import build_qcbm_circuit_ion_trap
-            from zquantum.core.circuit import save_circuit
+                circuit = build_qcbm_circuit_ion_trap(params, n_qubits, n_layers, topology=topology)
+                save_circuit(circuit, 'circuit.json')
+      outputs:
+        artifacts:
+          - name: circuit
+            path: /app/circuit.json
 
-            n_qubits = {{inputs.parameters.n-qubits}}
-            n_layers = {{inputs.parameters.n-layers}}
-            topology = "{{inputs.parameters.topology}}"
-            iteration = {{inputs.parameters.iteration}}
-       
-            results = load_optimization_results("optimization-results.json")
-            params = results['history'][iteration]['params']
-            
-            circuit = build_qcbm_circuit_ion_trap(params, n_qubits, n_layers, topology=topology)
-            save_circuit(circuit, 'circuit.json')
-    outputs:
-      artifacts:
-      - name: circuit
-        path: /app/circuit.json
+    - name: compute-negative-log-likelihood
+      parent: generic-task
+      inputs:
+        parameters:
+          - name: command
+            value: python3 main_script.py
+        artifacts:
+          - name: measurements
+            path: /app/measurements.json
+          - name: target-distribution
+            path: /app/target-distribution.json
+          - name: main-script
+            path: /app/main_script.py
+            raw:
+              data: |
+                from zquantum.core.bitstring_distribution.distance_measures import compute_clipped_negative_log_likelihood
+                from zquantum.core.bitstring_distribution import load_bitstring_distribution
+                from zquantum.core.measurement import Measurements
+                from zquantum.core.utils import save_list
 
-  - name: compute-negative-log-likelihood
-    parent: generic-task
-    inputs:
-      parameters:
-      - name: command
-        value: python3 main_script.py
-      artifacts:
-      - name: measurements
-        path: /app/measurements.json
-      - name: target-distribution
-        path: /app/target-distribution.json
-      - name: main-script
-        path: /app/main_script.py
-        raw:
-          data: |
-            from zquantum.core.bitstring_distribution.distance_measures import compute_clipped_negative_log_likelihood
-            from zquantum.core.bitstring_distribution import load_bitstring_distribution
-            from zquantum.core.measurement import Measurements
-            from zquantum.core.utils import save_list
-            
-            measurements = Measurements.load_from_file('measurements.json')
-            measured_distribution = measurements.get_distribution()
-            target_distribution = load_bitstring_distribution("target-distribution.json")
-            distance_measure_params = {"epsilon": 1e-9}
-            negative_clipped_log_likelihood = []
-            negative_clipped_log_likelihood.append(compute_clipped_negative_log_likelihood(target_distribution, measured_distribution,distance_measure_params))
-            save_list(negative_clipped_log_likelihood, 'negative-clipped-log-likelihood.json')
+                measurements = Measurements.load_from_file('measurements.json')
+                measured_distribution = measurements.get_distribution()
+                target_distribution = load_bitstring_distribution("target-distribution.json")
+                distance_measure_params = {"epsilon": 1e-9}
+                negative_clipped_log_likelihood = []
+                negative_clipped_log_likelihood.append(compute_clipped_negative_log_likelihood(target_distribution, measured_distribution,distance_measure_params))
+                save_list(negative_clipped_log_likelihood, 'negative-clipped-log-likelihood.json')
 
-    outputs:
-      artifacts:
-      - name: negative-clipped-log-likelihood
-        path: /app/negative-clipped-log-likelihood.json
-        
-
-
-            
-
-
-
-      
+      outputs:
+        artifacts:
+          - name: negative-clipped-log-likelihood
+            path: /app/negative-clipped-log-likelihood.json

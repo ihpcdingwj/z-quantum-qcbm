@@ -56,58 +56,50 @@ spec:
       - s3-bucket: quantum-engine
       - s3-key: projects/z-quantum-qcbm/qcbm-opt
 
+    - n-qubits: "6"
+    - n-layers: "2"
+    - topology: "all"
+    - seed: "14"
+
   templates:
     - name: main
-      steps:
+        steps:
         - - name: get-initial-parameters
-            template: generate-random-qcbm-params
+            template: generate-random-ansatz-params
             arguments:
-              parameters:
-                - n-qubits: "6"
-                - n-layers: "4"
-                - seed: "14"
-                - topology: "all"
-                - min-val: "-1.57"
-                - max-val: "1.57"
-                - resources: [z-quantum-core, z-quantum-qcbm]
-
-        - - name: get-bars-and-stripes-distribution
+            parameters:
+            - ansatz-specs: "{'module_name': 'zquantum.qcbm.ansatz', 'function_name': 'QCBMAnsatz', 'number_of_layers': {{workflow.parameters.n-layers}}, 'number_of_qubits': {{workflow.parameters.n-qubits}}, 'topology': '{{workflow.parameters.topology}}'}"
+            - min-val: "-1.57"
+            - max-val: "1.57"
+            - seed: "{{workflow.parameters.seed}}"
+            - resources: [z-quantum-core, z-quantum-qcbm]
+        - name: get-bars-and-stripes-distribution
             template: generate-bars-and-stripes-target-distribution
             arguments:
-              parameters:
-                - nrows: "3"
-                - ncols: "2"
-                - fraction: "1.0"
-                - method: "zigzag"
-                - resources: [z-quantum-core, z-quantum-qcbm]
-
+            parameters:
+            - nrows: "3"
+            - ncols: "2"
+            - fraction: "1.0"
+            - method: "zigzag"
+            - resources: [z-quantum-core, z-quantum-qcbm]
         - - name: optimize-circuit
             template: optimize-variational-qcbm-circuit
             arguments:
-              parameters:
-                - n-qubits: "6"
-                - n-layers: "4"
-                - topology: "all"
-                - epsilon: "0.000001"
-                - distance-measure-specs: "{'module_name': 'zquantum.core.bitstring_distribution.distance_measures.jensen_shannon_divergence', 'function_name': 'compute_jensen_shannon_divergence'}"
-                # - backend-specs: "{'module_name': 'qeforest.simulator', 'function_name': 'ForestSimulator', 'device_name': 'wavefunction-simulator'}"
-                - backend-specs: "{'module_name': 'qeqiskit.simulator', 'function_name': 'QiskitSimulator', device_name': 'statevector_simulator'}"
-                # - backend-specs: "{'module_name': 'qehoneywell.backend', 'function_name': 'HoneywellBackend', 'device_name': 'HQS-LT-1.0-APIVAL', 'token': 'ANrxPHBNLF9F2D9J8kenA771qvSD29vJ9qBbKzNg', 'pwd': 'Zapatahoneywell1', 'user_name': 'bperopadre@zapatacomputing.com'}"
-                - optimizer-specs: "{'module_name': 'zquantum.optimizers.cma_es_optimizer', 'function_name': 'CMAESOptimizer', 'options': {'popsize': 5, 'sigma_0': 0.1, 'tolx': 1e-6}}"
-                # - optimizer-specs: "{'module_name': 'zquantum.optimizers.scipy_optimizer', 'function_name': 'ScipyOptimizer', 'method': 'L-BFGS-B'}"
-                - resources:
-                    [
-                      z-quantum-core,
-                      qe-openfermion,
-                      z-quantum-optimizers,
-                      qe-forest,
-                      z-quantum-qcbm,
-                      qe-honeywell,
-                      qe-qiskit,
-                    ]
-                - memory: 8000Mi
-              artifacts:
-                - initial-parameters:
-                    from: "{{steps.get-initial-parameters.outputs.artifacts.parameters}}"
-                - target-distribution:
-                    from: "{{steps.get-bars-and-stripes-distribution.outputs.artifacts.distribution}}"
+            parameters:
+            - n-qubits: "{{workflow.parameters.n-qubits}}"
+            - n-layers: "{{workflow.parameters.n-layers}}"
+            - topology: "{{workflow.parameters.topology}}"
+            - distance-measure-specs: "{'module_name': 'zquantum.core.bitstring_distribution', 'function_name': 'compute_jensen_shannon_divergence'}"
+            - distance-measure-parameters: "{'epsilon': 1e-9}"
+            # - backend-specs: "{'module_name': 'qeforest.simulator', 'function_name': 'ForestSimulator', 'device_name': 'wavefunction-simulator'}"
+            - backend-specs: "{'module_name': 'qeqiskit.simulator', 'function_name': 'QiskitSimulator', device_name': 'statevector_simulator'}"
+            # - backend-specs: "{'module_name': 'qehoneywell.backend', 'function_name': 'HoneywellBackend', 'device_name': 'HQS-LT-1.0-APIVAL', 'token': 'ANrxPHBNLF9F2D9J8kenA771qvSD29vJ9qBbKzNg', 'pwd': 'Zapatahoneywell1', 'user_name': 'bperopadre@zapatacomputing.com'}"
+            - optimizer-specs: "{'module_name': 'zquantum.optimizers.cma_es_optimizer', 'function_name': 'CMAESOptimizer', 'options': {'popsize': 5, 'sigma_0': 0.1, 'tolx': 1e-6}}"
+            # - optimizer-specs: "{'module_name': 'zquantum.optimizers.scipy_optimizer', 'function_name': 'ScipyOptimizer', 'method': 'L-BFGS-B'}"
+            - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-forest, z-quantum-qcbm, qe-honeywell]
+            - memory: 2048Mi
+            artifacts:
+            - initial-parameters:
+                from: "{{steps.get-initial-parameters.outputs.artifacts.params}}"
+            - target-distribution:
+                from: "{{steps.get-bars-and-stripes-distribution.outputs.artifacts.distribution}}"
