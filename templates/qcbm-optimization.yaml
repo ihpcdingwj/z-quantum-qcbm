@@ -83,7 +83,7 @@ spec:
             raw:
               data: |
                 from zquantum.optimizers.utils import load_optimization_results
-                from zquantum.qcbm.ansatz import build_qcbm_circuit_ion_trap
+                from zquantum.qcbm.ansatz import QCBMAnsatz
                 from zquantum.core.circuit import save_circuit
 
                 n_qubits = {{inputs.parameters.n-qubits}}
@@ -94,7 +94,8 @@ spec:
                 results = load_optimization_results("optimization-results.json")
                 params = results['history'][iteration]['params']
 
-                circuit = build_qcbm_circuit_ion_trap(params, n_qubits, n_layers, topology=topology)
+                ansatz = QCBMAnsatz(n_layers, n_qubits, topology)
+                circuit  = ansat.get_executable_circuit(params)
                 save_circuit(circuit, 'circuit.json')
       outputs:
         artifacts:
