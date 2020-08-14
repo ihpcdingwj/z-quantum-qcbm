@@ -95,7 +95,7 @@ spec:
                 params = results['history'][iteration]['params']
 
                 ansatz = QCBMAnsatz(n_layers, n_qubits, topology)
-                circuit  = ansat.get_executable_circuit(params)
+                circuit  = ansatz.get_executable_circuit(params)
                 save_circuit(circuit, 'circuit.json')
       outputs:
         artifacts:
